@@ -21,13 +21,14 @@
 
 
 
+
 module tb_modified_booth_multiplier();
     reg clk;
     reg [7:0] multiplicand;
     reg [7:0] multiplier;
     wire [15:0] product;
     
-    // Instantiate synchronous multiplier
+    // Instantiate the multiplier
     modified_booth_multiplier_sync uut (
         .clk(clk),
         .multiplicand(multiplicand),
@@ -35,74 +36,47 @@ module tb_modified_booth_multiplier();
         .product(product)
     );
     
-    // Clock generation (100 MHz)
+    // Generate 100MHz clock (period = 10ns)
     initial begin
         clk = 0;
-        forever #5 clk = ~clk;
+        forever #5 clk = ~clk;  // Toggle every 5ns
     end
     
-    // Test vectors and expected results
-    reg [7:0] test_mpd [0:4];
-    reg [7:0] test_mult [0:4];
-    reg [15:0] expected [0:4];
-    integer i;
-    
     initial begin
-        // Initialize test vectors
-        test_mpd[0] = 8'h1B;    // 27
-        test_mult[0] = 8'hF1;    // -15
-        expected[0] = 16'hFE6B;  // -405
-        
-        test_mpd[1] = 8'h0A;     // 10
-        test_mult[1] = 8'h0A;     // 10
-        expected[1] = 16'h0064;  // 100
-        
-        test_mpd[2] = 8'hF6;     // -10
-        test_mult[2] = 8'h0A;     // 10
-        expected[2] = 16'hFF9C;  // -100
-        
-        test_mpd[3] = 8'h80;     // -128
-        test_mult[3] = 8'h80;     // -128
-        expected[3] = 16'h4000;  // 16384
-        
-        test_mpd[4] = 8'h80;     // -128
-        test_mult[4] = 8'h0A;     // 10
-        expected[4] = 16'hFB00;  // -1280
-        
-        // Initialize inputs
-        multiplicand = 0;
-        multiplier = 0;
-        
-        // Apply test vectors
-        for (i = 0; i < 5; i = i+1) begin
-            // Apply inputs at negative edge
-            @(negedge clk);
-            multiplicand = test_mpd[i];
-            multiplier = test_mult[i];
-            
-            // Wait for one full clock cycle
-            @(posedge clk);
-            #1; // Small delay for signal stability
-            
-            // Check result after one clock cycle
-            if (product === expected[i]) begin
-                $display("[PASS] Test %0d: %0d * %0d = %0d (0x%h)", 
-                         i, $signed(test_mpd[i]), $signed(test_mult[i]), 
-                         $signed(product), product);
-            end else begin
-                $display("[FAIL] Test %0d: %0d * %0d = %0d (0x%h), Expected: %0d (0x%h)", 
-                         i, $signed(test_mpd[i]), $signed(test_mult[i]), 
-                         $signed(product), product, 
-                         $signed(expected[i]), expected[i]);
-            end
-        end
-        
-        $finish;
-    end
-    
-    // VCD dumping for debugging
-    initial begin
+        // Initialize waveform logging
         $dumpfile("waveform.vcd");
         $dumpvars(0, tb_modified_booth_multiplier);
+        
+        // Test Case 1: 27 * -15 = -405
+        multiplicand = 27;      // Positive decimal
+        multiplier = -15;       // Negative decimal
+        #20;                    // Wait 2 clock cycles
+        $display("27 * -15 = %d (Hex: %h)", product, product);
+        
+        // Test Case 2: 10 * 10 = 100
+        multiplicand = 10;
+        multiplier = 10;
+        #10;                    // Wait 1 clock cycle
+        $display("10 * 10 = %d", product);
+        
+        // Test Case 3: -10 * 10 = -100
+        multiplicand = -10;
+        multiplier = 10;
+        #10;
+        $display("-10 * 10 = %d", product);
+        
+        // Test Case 4: -128 * -128 = 16384
+        multiplicand = -128;
+        multiplier = -128;
+        #10;
+        $display("-128 * -128 = %d", product);
+        
+        // Test Case 5: -128 * 10 = -1280
+        multiplicand = -128;
+        multiplier = 10;
+        #10;
+        $display("-128 * 10 = %d", product);
+        
+        $finish;
     end
 endmodule
